@@ -1,0 +1,21 @@
+{
+  "app": "python app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "source.bat",
+      "**/__init__.py",
+      "python/__pycache__",
+      "tests"
+    ]
+  },
+  "context": {
+    "sns_topic": "arn:aws:sns:",
+    "account_id": "0123456789"
+  }
+}
