@@ -1,0 +1,24 @@
+version: 0.2
+env:
+  variables:
+    templateFile: "./pipeline_template.yaml"
+    stackName: "SOME-STACK-NAME"
+    region: "YOUR-REGION"
+    parametersFile: "./pipeline_params.json"
+
+phases:
+    build:
+        commands:
+            - aws cloudformation package --template-file ${templateFile} --s3-bucket ${s3Bucket} --output-template-file template-out.yaml --region ${region}
+    post_build:
+        commands:
+            - echo "Start build..."
+            - aws cloudformation deploy --template-file template-out.yaml --parameter-overrides file://${parametersFile} --stack-name ${stackName} --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --tags Name=${stackName}
+            - sleep 15
+            - |
+              if aws cloudformation describe-stacks --stack-name ${stackName} &>/dev/null; then
+              echo "Stack exists ..."
+              aws cloudformation describe-stack-resources --stack-name ${stackName} | jq -r '.StackResources | .[] | "\(.ResourceType)=\(.ResourceStatus)"'
+              else
+              echo "Stack doesn't exist ..."
+              fi
