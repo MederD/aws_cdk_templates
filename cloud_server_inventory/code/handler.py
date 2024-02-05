@@ -1,0 +1,56 @@
+import os
+import logging
+import boto3
+from getservers import InstanceWrapper
+
+logger = logging.getLogger()
+logging.basicConfig()
+logger.setLevel(logging.INFO)
+
+account_id = os.environ['account_id']
+role_assume = os.environ['assumed_role']
+tablename = os.environ['tablename']
+
+if account_id != 'SOME-ACCOUNT-NUMBER':
+    region = 'us-west-2'
+else:
+    region = 'us-east-1'
+
+sts_client = boto3.client('sts')
+sts_session = sts_client.assume_role(RoleArn = role_assume, 
+                                     RoleSessionName = 'dynamodb-session')
+KEY_ID = sts_session['Credentials']['AccessKeyId']
+ACCESS_KEY = sts_session['Credentials']['SecretAccessKey']
+TOKEN = sts_session['Credentials']['SessionToken']
+
+def handler(event, context):
+    ec2_client = boto3.client('ec2', region_name = region)
+    instance_wrapper = InstanceWrapper(ec2_client, account_id)
+    try:
+        instances = instance_wrapper.get_all_instances(account_id)
+        for ids in instances:
+            # Convert datetime to string first
+            LaunchDate = instances[ids]['LaunchDate'].strftime("%m/%d/%Y")
+
+            dynamodb_client = boto3.client('dynamodb',
+                              region_name = region, 
+                              aws_access_key_id = KEY_ID, 
+                              aws_secret_access_key = ACCESS_KEY, 
+                              aws_session_token = TOKEN)
+                               
+            dynamodb_client.put_item(
+                TableName = tablename,
+                Item = {
+                    "InstanceId": {'S': ids},
+                    "Account": {'S': instances[ids]['Account']},
+                    "Type": {'S': instances[ids]['Type']},
+                    "LaunchDate": {'S': LaunchDate},
+                    "Platform": {'S': instances[ids]['Platform']},
+                    "PrivateIp": {'S': instances[ids]['PrivateIp']},
+                    "PuplicIp": {'S': instances[ids]['PublicIp']},
+                    "State": {'S': instances[ids]['State']}
+                })
+            
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise e
