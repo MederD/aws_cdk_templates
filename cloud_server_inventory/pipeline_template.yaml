@@ -1,0 +1,64 @@
+...
+ CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: 
+        Fn::Join:
+          - '-'
+          - 
+            - !Sub ${AWS::StackName}
+      ArtifactStore:
+        Type: S3
+        Location:
+          Ref: artifactStoreBucket
+      RoleArn: !If [ CreateNewPipelineRole, !GetAtt CodePipelineServiceRole.Arn, !Ref codePipelineRole ]
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              Namespace: SourceVariables 
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref codestarConnection
+                FullRepositoryId: !Ref gitRepo
+                BranchName: !Ref gitBranch
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: '1'
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+                EnvironmentVariables:
+                  '[{"name":"stackName","value":"#{variables.stackName}","type":"PLAINTEXT"}, {"name":"CURRENT_ACCOUNT","value":"#{variables.CURRENT_ACCOUNT}","type":"PLAINTEXT"}]'
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+              RunOrder: '1'
+      PipelineType: V2
+      Triggers:
+        - ProviderType: CodeStarSourceConnection
+          GitConfiguration:
+            Push:
+              - Tags:
+                  Includes:
+                    - release*
+            SourceActionName: Source
+      Variables:
+        - Name: stackName
+          DefaultValue: !Ref Environment
+          Description: Variable will be used as a stackname for the CDK.
+        - Name: CURRENT_ACCOUNT
+          DefaultValue: !Ref AWS::AccountId
+          Description: Variable will be used as a CURRENT_ACCOUNT id for the CDK.
