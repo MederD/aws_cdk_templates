@@ -1,0 +1,22 @@
+version: 0.2
+env:
+  variables:
+    region: "us-west-2"
+
+phases:
+    install:
+        commands:
+            - npm install -g aws-cdk
+            - cdk --version
+            - python -m pip install -r ${CODEBUILD_SRC_DIR}/requirements.txt
+
+    post_build:
+        commands:
+            - echo ${stackName}
+            - echo ${CURRENT_ACCOUNT}
+            - echo ${AWS_REGION}
+     
+            # StackName and CURRENT_ACCOUNT variable will be passed from CodePipeline source (Ex: Dev, UAT, etc.)
+            - cdk bootstrap aws://${CURRENT_ACCOUNT}/${AWS_REGION}
+            # - sleep 15
+            - cdk deploy ${stackName} --require-approval never --verbose
