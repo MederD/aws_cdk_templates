@@ -1,0 +1,25 @@
+{
+  "app": "python app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "source.bat",
+      "**/__init__.py",
+      "python/__pycache__",
+      "tests"
+    ]
+  },
+  "context": {
+    "slack_url": "SLACK-URL",
+    "lambda_role": "LAMBDA-ROLE",
+    "logGroupName": "LOGGROUPNAME",
+    "query": "fields httpRequest.clientIp | filter ispresent(nonTerminatingMatchingRules.0.ruleId) | filter httpRequest.httpMethod != 'GET' | dedup httpRequest.clientIp",
+    "secretname": "SECRETNAME",
+    "existinglayer": "LAYERARN"
+  }
+}
