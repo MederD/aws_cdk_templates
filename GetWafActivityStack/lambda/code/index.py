@@ -39,7 +39,7 @@ def handler(event, context):
 
             log_wrapper.logger.info("%s report -> malicious: %s, suspicious: %s", data['id'], malicious, suspicious)
 
-            if malicious > 0 or suspicious > 0:
+            if malicious > 1 or suspicious > 1:
                 message = "IP: %s, Malicious: %s, Suspicious: %s" % (data['id'], malicious, suspicious)
                 
                 log_wrapper.logger.info(" --- Constructing message for %s --- ", data['id'])
@@ -50,8 +50,14 @@ def handler(event, context):
                     Subject = 'Log query results'
                 )
         
+            else:
+                log_wrapper.logger.info(" --- No recorded malicious or suspicious report on virustotal of IP: %s. --- ", ip)  
         else:
-            log_wrapper.logger.info(" --- No recorded malicious or suspicious report on virustotal of IP: %s. --- ", ip)  
+            try:
+                error_message = response.json()['error']['message']
+                log_wrapper.logger.info(error_message)
+            except Exception as e:
+                log_wrapper.logger.info(f"Failed to get error message from response: {e}")
 
     except Exception:
         log_wrapper.logger.error(" --- Error! --- ")
