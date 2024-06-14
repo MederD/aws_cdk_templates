@@ -1,0 +1,16 @@
+version: 0.2
+env:
+  variables:
+    # Environment based variable
+    ENV: "dev"
+
+phases:
+    install:
+        commands:
+            - npm install -g aws-cdk
+            - cdk --version
+            - python -m pip install -r ${CODEBUILD_SRC_DIR}/requirements.txt
+
+    post_build:
+        commands:
+            - cdk deploy --context env=${ENV} --require-approval never --verbose
